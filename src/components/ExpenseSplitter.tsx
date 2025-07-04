@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calculator, Users, Leaf, DollarSign } from 'lucide-react';
 import ItemEntry, { ExpenseItem } from './ItemEntry';
+import ReceiptScanner from './ReceiptScanner';
 
 interface SplitResult {
   vegetarianAmount: number;
@@ -145,6 +145,10 @@ const ExpenseSplitter = () => {
     });
   };
 
+  const handleReceiptItems = (extractedItems: ExpenseItem[]) => {
+    setItems([...items, ...extractedItems]);
+  };
+
   useEffect(() => {
     calculateSplit();
   }, [items, totalPeople, vegetarians]);
@@ -174,9 +178,12 @@ const ExpenseSplitter = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Item Entry Section */}
+          {/* Receipt Scanner Section */}
           <div className="lg:col-span-2">
-            <ItemEntry items={items} onItemsChange={setItems} />
+            <div className="space-y-6">
+              <ReceiptScanner onItemsExtracted={handleReceiptItems} />
+              <ItemEntry items={items} onItemsChange={setItems} />
+            </div>
           </div>
 
           {/* People Details Section */}
