@@ -12,7 +12,7 @@ export interface ExpenseItem {
   id: string;
   name: string;
   amount: number;
-  category: 'Shared' | 'Vegetarian' | 'Non-Vegetarian';
+  category: 'Total' | 'Shared' | 'Vegetarian' | 'Non-Vegetarian';
 }
 
 interface ItemEntryProps {
@@ -26,7 +26,7 @@ const ItemEntry: React.FC<ItemEntryProps> = ({ items, onItemsChange }) => {
       id: Date.now().toString(),
       name: '',
       amount: 0,
-      category: 'Shared'
+      category: 'Total'
     };
     onItemsChange([...items, newItem]);
   };
@@ -40,6 +40,13 @@ const ItemEntry: React.FC<ItemEntryProps> = ({ items, onItemsChange }) => {
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
+
+  // Sort items to show Total items first
+  const sortedItems = [...items].sort((a, b) => {
+    if (a.category === 'Total' && b.category !== 'Total') return -1;
+    if (a.category !== 'Total' && b.category === 'Total') return 1;
+    return 0;
+  });
 
   return (
     <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
@@ -67,13 +74,13 @@ const ItemEntry: React.FC<ItemEntryProps> = ({ items, onItemsChange }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
+                {sortedItems.map((item) => (
+                  <TableRow key={item.id} className={item.category === 'Total' ? 'bg-blue-50' : ''}>
                     <TableCell>
                       <Input
                         value={item.name}
                         onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                        placeholder="Enter item name"
+                        placeholder={item.category === 'Total' ? "Total bill/receipt" : "Enter item name"}
                         className="min-w-32"
                       />
                     </TableCell>
@@ -97,6 +104,7 @@ const ItemEntry: React.FC<ItemEntryProps> = ({ items, onItemsChange }) => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="Total">Total</SelectItem>
                           <SelectItem value="Shared">Shared</SelectItem>
                           <SelectItem value="Vegetarian">Vegetarian</SelectItem>
                           <SelectItem value="Non-Vegetarian">Non-Vegetarian</SelectItem>

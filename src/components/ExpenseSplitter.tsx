@@ -17,10 +17,12 @@ interface SplitResult {
 }
 
 interface CategoryTotals {
+  total: number;
   shared: number;
   vegetarian: number;
   nonVegetarian: number;
-  total: number;
+  itemizedTotal: number;
+  remainingAmount: number;
 }
 
 const ExpenseSplitter = () => {
@@ -39,6 +41,9 @@ const ExpenseSplitter = () => {
   const calculateCategoryTotals = (): CategoryTotals => {
     const totals = items.reduce((acc, item) => {
       switch (item.category) {
+        case 'Total':
+          acc.total += item.amount;
+          break;
         case 'Shared':
           acc.shared += item.amount;
           break;
@@ -50,11 +55,15 @@ const ExpenseSplitter = () => {
           break;
       }
       return acc;
-    }, { shared: 0, vegetarian: 0, nonVegetarian: 0 });
+    }, { total: 0, shared: 0, vegetarian: 0, nonVegetarian: 0 });
+
+    const itemizedTotal = totals.shared + totals.vegetarian + totals.nonVegetarian;
+    const remainingAmount = totals.total - itemizedTotal;
 
     return {
       ...totals,
-      total: totals.shared + totals.vegetarian + totals.nonVegetarian
+      itemizedTotal,
+      remainingAmount
     };
   };
 
@@ -116,9 +125,10 @@ const ExpenseSplitter = () => {
       return;
     }
 
-    // Calculate splits
+    // Calculate splits - include remaining amount in shared expenses
     const nonVegetarians = people - veggies;
-    const sharedAmountPerPerson = categoryTotals.shared / people;
+    const totalSharedAmount = categoryTotals.shared + categoryTotals.remainingAmount;
+    const sharedAmountPerPerson = totalSharedAmount / people;
     const vegetarianOnlyAmountPerPerson = veggies > 0 ? categoryTotals.vegetarian / veggies : 0;
     const nonVegetarianOnlyAmountPerPerson = nonVegetarians > 0 ? categoryTotals.nonVegetarian / nonVegetarians : 0;
     
@@ -212,8 +222,12 @@ const ExpenseSplitter = () => {
 
               {/* Category Totals */}
               <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Expense Totals:</h3>
+                <h3 className="font-semibold text-gray-800 mb-3">Expense Breakdown:</h3>
                 <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Total Bill:</span>
+                    <span className="font-medium">{formatCurrency(categoryTotals.total)}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span>Shared:</span>
                     <span className="font-medium">{formatCurrency(categoryTotals.shared)}</span>
@@ -226,10 +240,20 @@ const ExpenseSplitter = () => {
                     <span>Non-Vegetarian:</span>
                     <span className="font-medium">{formatCurrency(categoryTotals.nonVegetarian)}</span>
                   </div>
-                  <div className="flex justify-between border-t pt-2 font-semibold">
-                    <span>Total:</span>
-                    <span>{formatCurrency(categoryTotals.total)}</span>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Itemized Total:</span>
+                    <span>{formatCurrency(categoryTotals.itemizedTotal)}</span>
                   </div>
+                  {categoryTotals.remainingAmount !== 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span className={categoryTotals.remainingAmount > 0 ? 'text-orange-600' : 'text-red-600'}>
+                        {categoryTotals.remainingAmount > 0 ? 'Remaining (taxes/fees):' : 'Over itemized:'}
+                      </span>
+                      <span className={categoryTotals.remainingAmount > 0 ? 'text-orange-600' : 'text-red-600'}>
+                        {formatCurrency(Math.abs(categoryTotals.remainingAmount))}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -249,7 +273,7 @@ const ExpenseSplitter = () => {
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-600 font-medium">{result.error}</p>
               </div>
-            ) : result.isValid && categoryTotals.total > 0 ? (
+            ) : result.isValid && (categoryTotals.total > 0 || categoryTotals.itemizedTotal > 0) ? (
               <div className="space-y-6">
                 {/* Breakdown */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
